@@ -74,9 +74,9 @@ o.bind("CTRL + SPACE", "Direct input for the terminal prefix (JIS)", function()
 end, { non_consuming = true })
 
 -- On JIS, + is Shift + ;, so apps see Ctrl + Shift + semicolon and never zoom
--- in. Hand them the keypad plus instead, which Chromium, Electron apps, VS Code,
--- Firefox, and the terminals all read as zoom in. Obsidian only listens for
--- Ctrl + ^, which JIS types without Shift.
+-- in. Hand them Ctrl + keypad plus instead, which Chromium, Electron apps,
+-- VS Code, and Firefox read as zoom in. Obsidian only listens for Ctrl + ^,
+-- which JIS types without Shift.
 local zoom_in_overrides = {
   obsidian = { "CTRL", "asciicircum" },
 }

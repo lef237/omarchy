@@ -167,7 +167,8 @@ setup_input_method
 # JIS keyboards have dedicated keys for this: Henkan turns Japanese input on,
 # Muhenkan turns it off, and Zenkaku/Hankaku toggles. That frees Ctrl + Space,
 # the default toggle, for the tmux and Herdr prefix (see
-# default/hypr/bindings/jis.lua).
+# default/hypr/bindings/jis.lua). The lists are replaced whole, so the other
+# default toggle, Hangul, goes too.
 if [[ $layout == "jp" ]]; then
   fcitx_config_set_list "$fcitx_dir/config" "Hotkey/TriggerKeys" "Zenkaku_Hankaku"
   fcitx_config_set_list "$fcitx_dir/config" "Hotkey/ActivateKeys" "Henkan"

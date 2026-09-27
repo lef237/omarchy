@@ -63,19 +63,21 @@ Omarchy runs the [fcitx5](https://fcitx-im.org/) input method framework as part 
 
 ### Japanese
 
-For Japanese, run _Setup > Japanese_ in the Omarchy menu (or `omarchy setup japanese`). It installs Mozc and `fcitx5-configtool`, and adds Mozc after your keyboard layout in the input methods. It also sets the interface font to Noto Sans CJK JP so kanji take their Japanese forms, and asks whether to switch the system language to Japanese (`ja_JP.UTF-8`), which applies the next time you log in.
+For Japanese, run _Setup > Japanese_ in the Omarchy menu (or `omarchy setup japanese`). It installs Mozc and `fcitx5-configtool`, and adds Mozc to your input methods, after your keyboard layout or after the input methods you already have. It also sets the interface font to Noto Sans CJK JP so kanji take their Japanese forms, and asks whether to switch the system language to Japanese (`ja_JP.UTF-8`), which applies the next time you log in.
 
 On a US keyboard, `Ctrl + Space` toggles Japanese input. That's also the tmux and Herdr prefix, so in the terminal use `Ctrl + B` for tmux, or pick another toggle key in `fcitx5-configtool`.
 
-If you installed Omarchy with the Japanese (JIS) keyboard layout, a few more defaults apply:
+If you installed Omarchy with the Japanese (JIS) keyboard layout, `Ctrl + +` (`Ctrl + Shift + ;`) zooms in, even in apps that don't read the JIS `+` key.
+
+On a JIS keyboard, `omarchy setup japanese` also moves switching Japanese input to the dedicated keys. It replaces fcitx5's lists of switching keys, so any others there, such as `Ctrl + Space` and `Hangul`, stop switching input:
 
 | Key | Action |
 | --- | --- |
 | `Henkan` (変換) | Japanese input on |
 | `Muhenkan` (無変換) | Japanese input off |
 | `Zenkaku/Hankaku` (半角/全角) | Toggle Japanese input |
-| `Ctrl + Shift + ;` (`Ctrl + +`) | Zoom in, in apps that don't read the JIS `+` key |
-| `Ctrl + Space` in a terminal | Switch to direct input, then send the tmux/Herdr prefix |
+
+That frees `Ctrl + Space` for tmux and Herdr. In a terminal, it now switches to direct input before the prefix goes through, so the key after it reaches the multiplexer instead of Mozc. As long as `Ctrl + Space` still toggles fcitx5, it keeps doing only that.
 
 The window resize keys `Super + Minus` and `Super + Equal` sit on `-` and `^` on a JIS keyboard.
 
