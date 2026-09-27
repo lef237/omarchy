@@ -75,7 +75,7 @@ profile_of() {
 }
 
 config_of() {
-  cat "$test_dir/$1/home/.config/fcitx5/config"
+  cat "$test_dir/$1/home/.config/fcitx5/config" 2>/dev/null || true
 }
 
 # US keyboard: Mozc joins the US keyboard.
@@ -89,10 +89,6 @@ grep -Fx 'Name=keyboard-us' <<<"$(profile_of us)" >/dev/null &&
   grep -Fx 'Default Layout=us' <<<"$(profile_of us)" >/dev/null ||
   fail "a US keyboard gets Mozc after keyboard-us" "$(profile_of us)"
 pass "a US keyboard gets Mozc after keyboard-us"
-
-grep -Fx 'resetStateWhenFocusIn=No' <<<"$(config_of us)" >/dev/null ||
-  fail "Japanese input survives focus changes" "$(config_of us)"
-pass "Japanese input survives focus changes"
 
 calls=$(<"$test_dir/us.calls")
 stop_line=$(grep -n 'systemctl --user stop omarchy-fcitx5.service' <<<"$calls" | cut -d: -f1)
@@ -167,20 +163,22 @@ pass "no keyboard layout falls back to keyboard-us"
 home="$test_dir/existing/home"
 mkdir -p "$home/.config/fcitx5"
 printf '[Groups/0]\nName=Mine\n\n[Groups/0/Items/0]\nName=mozc\n' >"$home/.config/fcitx5/profile"
-printf '[Hotkey]\nEnumerateWithTriggerKeys=True\n\n[Behavior]\nActiveByDefault=False\nresetStateWhenFocusIn=All\n' >"$home/.config/fcitx5/config"
+config='[Hotkey]
+EnumerateWithTriggerKeys=True
+
+[Behavior]
+ActiveByDefault=False
+resetStateWhenFocusIn=All'
+printf '%s\n' "$config" >"$home/.config/fcitx5/config"
 TEST_LAYOUT=us run_setup existing
 
 grep -Fx 'Name=Mine' <<<"$(profile_of existing)" >/dev/null ||
   fail "an existing Mozc profile is kept" "$(profile_of existing)"
 pass "an existing Mozc profile is kept"
 
-config=$(config_of existing)
-grep -Fx 'EnumerateWithTriggerKeys=True' <<<"$config" >/dev/null &&
-  grep -Fx 'ActiveByDefault=False' <<<"$config" >/dev/null &&
-  grep -Fx 'resetStateWhenFocusIn=No' <<<"$config" >/dev/null &&
-  ! grep -Fx 'resetStateWhenFocusIn=All' <<<"$config" >/dev/null ||
-  fail "setup changes only its own fcitx5 settings" "$config"
-pass "setup changes only its own fcitx5 settings"
+[[ $(config_of existing) == "$config" ]] ||
+  fail "outside JIS, setup leaves the fcitx5 settings alone" "$(config_of existing)"
+pass "outside JIS, setup leaves the fcitx5 settings alone"
 
 # A profile without Mozc keeps its input methods and gains Mozc after them.
 home="$test_dir/append/home"

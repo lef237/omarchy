@@ -18,40 +18,6 @@ vconsole_setting() {
   fi
 }
 
-# Set key=value under [section] in an fcitx5 config file, keeping everything
-# else the user has set there.
-fcitx_config_set() {
-  local file="$1" section="$2" key="$3" value="$4"
-
-  mkdir -p "${file%/*}"
-  touch "$file"
-  awk -v section="[$section]" -v key="$key" -v value="$value" '
-    function flush() {
-      if (in_section && !done) {
-        print key "=" value
-        done = 1
-      }
-    }
-    $0 == section { in_section = 1; print; next }
-    /^\[/ { flush(); in_section = 0; print; next }
-    in_section && index($0, key "=") == 1 {
-      if (!done) print key "=" value
-      done = 1
-      next
-    }
-    { print }
-    END {
-      flush()
-      if (!done) {
-        if (NR) print ""
-        print section
-        print key "=" value
-      }
-    }
-  ' "$file" >"$file.tmp"
-  mv "$file.tmp" "$file"
-}
-
 # Replace the whole [section] list (0=, 1=, ...) in an fcitx5 config file.
 fcitx_config_set_list() {
   local file="$1" section="$2"
@@ -197,11 +163,6 @@ omarchy-pkg-add fcitx5-mozc fcitx5-configtool
 
 stop_fcitx5
 setup_input_method
-
-# Keep Japanese input on when switching windows. The default resets every
-# window to direct input on focus, so moving back to a chat or editor drops out
-# of Japanese mid-conversation.
-fcitx_config_set "$fcitx_dir/config" "Behavior" "resetStateWhenFocusIn" "No"
 
 # JIS keyboards have dedicated keys for this: Henkan turns Japanese input on,
 # Muhenkan turns it off, and Zenkaku/Hankaku toggles. That frees Ctrl + Space,

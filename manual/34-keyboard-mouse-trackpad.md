@@ -63,7 +63,7 @@ Omarchy runs the [fcitx5](https://fcitx-im.org/) input method framework as part 
 
 ### Japanese
 
-For Japanese, run _Setup > Japanese_ in the Omarchy menu (or `omarchy setup japanese`). It installs Mozc and `fcitx5-configtool`, adds Mozc after your keyboard layout in the input methods, and keeps Japanese input on when you switch between windows. It also sets the interface font to Noto Sans CJK JP so kanji take their Japanese forms, and asks whether to switch the system language to Japanese (`ja_JP.UTF-8`), which applies the next time you log in.
+For Japanese, run _Setup > Japanese_ in the Omarchy menu (or `omarchy setup japanese`). It installs Mozc and `fcitx5-configtool`, and adds Mozc after your keyboard layout in the input methods. It also sets the interface font to Noto Sans CJK JP so kanji take their Japanese forms, and asks whether to switch the system language to Japanese (`ja_JP.UTF-8`), which applies the next time you log in.
 
 On a US keyboard, `Ctrl + Space` toggles Japanese input. That's also the tmux and Herdr prefix, so in the terminal use `Ctrl + B` for tmux, or pick another toggle key in `fcitx5-configtool`.
 
