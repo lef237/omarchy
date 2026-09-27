@@ -44,18 +44,28 @@ cat >"$stub_bin/localectl" <<'STUB'
 echo "   System Locale: LANG=${TEST_LANG:-en_US.UTF-8}"
 echo "       VC Keymap: ${TEST_KEYMAP:-us}"
 echo "      X11 Layout: ${TEST_LAYOUT:-us}"
-[[ -z ${TEST_VARIANT:-} ]] || echo "     X11 Variant: $TEST_VARIANT"
 STUB
 chmod +x "$stub_bin"/*
 
+# The layout comes from vconsole.conf, built from TEST_LAYOUT and TEST_VARIANT
+# unless TEST_VCONSOLE gives the whole file, or "missing" for none at all.
 run_setup() {
   local scenario="$1"
   local home="$test_dir/$scenario/home"
+  local vconsole="$test_dir/$scenario/vconsole.conf"
 
   mkdir -p "$home"
   : >"$test_dir/$scenario.calls"
 
-  HOME="$home" CALL_LOG="$test_dir/$scenario.calls" PATH="$stub_bin:$PATH" \
+  rm -f "$vconsole"
+  if [[ ! -v TEST_VCONSOLE ]]; then
+    printf 'KEYMAP=%s\nXKBLAYOUT=%s\n' "${TEST_KEYMAP:-us}" "${TEST_LAYOUT:-us}" >"$vconsole"
+    [[ -z ${TEST_VARIANT:-} ]] || echo "XKBVARIANT=$TEST_VARIANT" >>"$vconsole"
+  elif [[ $TEST_VCONSOLE != "missing" ]]; then
+    printf '%s' "$TEST_VCONSOLE" >"$vconsole"
+  fi
+
+  HOME="$home" CALL_LOG="$test_dir/$scenario.calls" PATH="$stub_bin:$PATH" OMARCHY_VCONSOLE_PATH="$vconsole" \
     bash "$ROOT/bin/omarchy-setup-japanese" >"$test_dir/$scenario.out" 2>&1 ||
     fail "setup japanese runs for $scenario" "$(<"$test_dir/$scenario.out")"
 }
@@ -134,6 +144,23 @@ TEST_LAYOUT=us TEST_VARIANT=intl run_setup variant
 grep -Fx 'Name=keyboard-us-intl' <<<"$(profile_of variant)" >/dev/null ||
   fail "the keyboard input method keeps the layout variant" "$(profile_of variant)"
 pass "the keyboard input method keeps the layout variant"
+
+TEST_VCONSOLE=$'XKBLAYOUT="jp,us"\nXKBVARIANT=","\n' run_setup multi-layout
+grep -Fx 'Name=keyboard-jp' <<<"$(profile_of multi-layout)" >/dev/null ||
+  fail "only the leading layout joins the input methods, as in Hyprland" "$(profile_of multi-layout)"
+pass "only the leading layout joins the input methods, as in Hyprland"
+
+# vconsole.conf only guarantees KEYMAP, and it need not exist. Without a
+# layout, fall back to us as Hyprland does (see default/hypr/input.lua), even
+# where localectl reports the X11 layout as "(unset)".
+TEST_VCONSOLE=$'KEYMAP=us\n' TEST_LAYOUT='(unset)' run_setup keymap-only
+TEST_VCONSOLE=missing TEST_LAYOUT='(unset)' run_setup missing
+for scenario in keymap-only missing; do
+  grep -Fx 'Name=keyboard-us' <<<"$(profile_of $scenario)" >/dev/null &&
+    ! grep -F '(unset)' <<<"$(profile_of $scenario)" >/dev/null ||
+    fail "no keyboard layout falls back to keyboard-us ($scenario)" "$(profile_of $scenario)"
+done
+pass "no keyboard layout falls back to keyboard-us"
 
 # A profile that already has Mozc is the user's own and is left alone, and
 # existing fcitx5 settings survive.

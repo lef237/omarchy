@@ -7,10 +7,15 @@ set -e
 
 fcitx_dir="$HOME/.config/fcitx5"
 
-# The X11 layout picked at install time, which Hyprland also reads (see
-# default/hypr/keyboard.lua). Only the leading layout counts, as in Hyprland.
-x11_setting() {
-  localectl status 2>/dev/null | sed -n "s/^[[:space:]]*X11 $1: //p" | cut -d, -f1
+vconsole_conf="${OMARCHY_VCONSOLE_PATH:-/etc/vconsole.conf}"
+
+# The keyboard layout picked at install time, read from the same file Hyprland
+# reads (see default/hypr/keyboard.lua), so both agree on it. Only the leading
+# layout counts, as in Hyprland.
+vconsole_setting() {
+  if [[ -f $vconsole_conf ]]; then
+    (unset "$1"; . "$vconsole_conf"; echo "${!1:-}") | cut -d, -f1
+  fi
 }
 
 # Set key=value under [section] in an fcitx5 config file, keeping everything
@@ -89,9 +94,9 @@ start_fcitx5() {
   systemctl --user start omarchy-fcitx5.service
 }
 
-layout=$(x11_setting Layout)
+layout=$(vconsole_setting XKBLAYOUT)
 layout=${layout:-us}
-variant=$(x11_setting Variant)
+variant=$(vconsole_setting XKBVARIANT)
 
 # fcitx5 forwards keys through its own keymap while an input method is on, so
 # the group has to use the same layout as the desktop.
