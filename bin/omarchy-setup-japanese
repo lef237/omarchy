@@ -113,8 +113,24 @@ setup_input_method() {
     return
   fi
 
+  # Keep the input methods the user already has and put Mozc at the end of
+  # their first group. fcitx5 reads a group's items by index, so Mozc takes the
+  # next one.
+  if [[ -f $profile ]] && grep -qx "\[Groups/0\]" "$profile"; then
+    local next
+    next=$(grep -c "^\[Groups/0/Items/[0-9]*\]$" "$profile" || true)
+    printf '\n[Groups/0/Items/%s]\n# Name\nName=mozc\n# Layout\nLayout=\n' "$next" >>"$profile"
+    echo "Added Mozc after your other input methods."
+    return
+  fi
+
+  # A profile without a group has nothing to add to, so it is replaced, with a
+  # copy kept.
   if [[ -f $profile ]]; then
-    cp "$profile" "$profile.bak.$(date +%s)"
+    local backup
+    backup="$profile.bak.$(date +%s)"
+    cp "$profile" "$backup"
+    echo "Replaced your fcitx5 input methods. The previous ones are in $backup."
   fi
 
   mkdir -p "$fcitx_dir"

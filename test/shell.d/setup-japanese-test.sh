@@ -182,14 +182,36 @@ grep -Fx 'EnumerateWithTriggerKeys=True' <<<"$config" >/dev/null &&
   fail "setup changes only its own fcitx5 settings" "$config"
 pass "setup changes only its own fcitx5 settings"
 
-# A profile without Mozc is backed up before it is replaced.
+# A profile without Mozc keeps its input methods and gains Mozc after them.
+home="$test_dir/append/home"
+mkdir -p "$home/.config/fcitx5"
+printf '[Groups/0]\nName=Default\nDefault Layout=us\nDefaultIM=pinyin\n\n[Groups/0/Items/0]\nName=keyboard-us\nLayout=\n\n[Groups/0/Items/1]\nName=pinyin\nLayout=\n\n[GroupOrder]\n0=Default\n' >"$home/.config/fcitx5/profile"
+TEST_LAYOUT=us run_setup append
+profile=$(profile_of append)
+grep -A2 -Fx '[Groups/0/Items/0]' <<<"$profile" | grep -Fx 'Name=keyboard-us' >/dev/null &&
+  grep -A2 -Fx '[Groups/0/Items/1]' <<<"$profile" | grep -Fx 'Name=pinyin' >/dev/null &&
+  grep -A2 -Fx '[Groups/0/Items/2]' <<<"$profile" | grep -Fx 'Name=mozc' >/dev/null &&
+  grep -Fx 'DefaultIM=pinyin' <<<"$profile" >/dev/null ||
+  fail "a profile without Mozc keeps its input methods and gains Mozc" "$profile"
+pass "a profile without Mozc keeps its input methods and gains Mozc"
+
+TEST_LAYOUT=us run_setup append
+[[ $(profile_of append) == "$profile" ]] ||
+  fail "adding Mozc to an existing profile is idempotent" "$(profile_of append)"
+pass "adding Mozc to an existing profile is idempotent"
+
+# A profile with no group to add to is replaced, and the user is told where the
+# old one went.
 home="$test_dir/backup/home"
 mkdir -p "$home/.config/fcitx5"
-printf '[Groups/0]\nName=Default\n\n[Groups/0/Items/0]\nName=keyboard-de\n' >"$home/.config/fcitx5/profile"
+printf '[GroupOrder]\n' >"$home/.config/fcitx5/profile"
 TEST_LAYOUT=us run_setup backup
-compgen -G "$home/.config/fcitx5/profile.bak.*" >/dev/null ||
-  fail "a profile without Mozc is backed up before it is replaced"
-pass "a profile without Mozc is backed up before it is replaced"
+backup=$(compgen -G "$home/.config/fcitx5/profile.bak.*") ||
+  fail "a profile without a group is backed up before it is replaced"
+grep -F "$backup" "$test_dir/backup.out" >/dev/null &&
+  grep -Fx 'Name=mozc' <<<"$(profile_of backup)" >/dev/null ||
+  fail "replacing a profile names its backup" "$(<"$test_dir/backup.out")"
+pass "a profile without a group is replaced, and its backup is named"
 
 # Running it twice changes nothing.
 before=$(profile_of us; config_of us)
