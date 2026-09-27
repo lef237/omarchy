@@ -14,9 +14,13 @@ cat >"$stub_bin/omarchy-pkg-add" <<'STUB'
 #!/bin/bash
 printf 'pkg %s\n' "$*" >>"${CALL_LOG:?}"
 STUB
+# Note whether Mozc is in the profile when fcitx5 stops and starts, so the
+# test can tell the profile was written while fcitx5 was down.
 cat >"$stub_bin/systemctl" <<'STUB'
 #!/bin/bash
-printf 'systemctl %s\n' "$*" >>"${CALL_LOG:?}"
+mozc=no
+grep -qx 'Name=mozc' "$HOME/.config/fcitx5/profile" 2>/dev/null && mozc=yes
+printf 'systemctl %s (mozc: %s)\n' "$*" "$mozc" >>"${CALL_LOG:?}"
 STUB
 cat >"$stub_bin/pkill" <<'STUB'
 #!/bin/bash
@@ -91,9 +95,8 @@ grep -Fx 'Name=keyboard-us' <<<"$(profile_of us)" >/dev/null &&
 pass "a US keyboard gets Mozc after keyboard-us"
 
 calls=$(<"$test_dir/us.calls")
-stop_line=$(grep -n 'systemctl --user stop omarchy-fcitx5.service' <<<"$calls" | cut -d: -f1)
-start_line=$(grep -n 'systemctl --user start omarchy-fcitx5.service' <<<"$calls" | cut -d: -f1)
-[[ -n $stop_line && -n $start_line ]] && (( stop_line < start_line )) ||
+grep -Fx 'systemctl --user stop omarchy-fcitx5.service (mozc: no)' <<<"$calls" >/dev/null &&
+  grep -Fx 'systemctl --user start omarchy-fcitx5.service (mozc: yes)' <<<"$calls" >/dev/null ||
   fail "fcitx5 is down while its profile is rewritten" "$calls"
 pass "fcitx5 is down while its profile is rewritten"
 
