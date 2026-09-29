@@ -77,7 +77,7 @@ On a JIS keyboard, `omarchy setup japanese` also moves switching Japanese input 
 | `Muhenkan` (無変換) | Japanese input off |
 | `Zenkaku/Hankaku` (半角/全角) | Toggle Japanese input |
 
-That frees `Ctrl + Space` for tmux and Herdr. In a terminal, it now switches to direct input before the prefix goes through, so the key after it reaches the multiplexer instead of Mozc. As long as `Ctrl + Space` still toggles fcitx5, it keeps doing only that.
+That frees `Ctrl + Space` for tmux and Herdr. In a terminal, it now also switches to direct input, so the key after the prefix reaches the multiplexer instead of Mozc. Confirm or cancel any text you are still composing first, since Mozc takes `Ctrl + Space` for itself while composing. As long as `Ctrl + Space` still toggles fcitx5, it keeps doing only that.
 
 The window resize keys `Super + Minus` and `Super + Equal` sit on `-` and `^` on a JIS keyboard.
 

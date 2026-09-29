@@ -64,8 +64,8 @@ end
 
 -- Ctrl + Space is the tmux and Herdr prefix. With Japanese input on, the key
 -- that follows it lands in Mozc's composition instead of reaching the
--- multiplexer, so drop back to direct input first. Non-consuming, so the prefix
--- itself still goes through. While Ctrl + Space still toggles fcitx5, this
+-- multiplexer, so also drop back to direct input. Non-consuming, so the prefix
+-- itself still goes through. Mozc keeps the prefix while composing, though. While Ctrl + Space still toggles fcitx5, this
 -- would undo that toggle, so it only runs once the toggle has moved elsewhere.
 o.bind("CTRL + SPACE", "Direct input for the terminal prefix (JIS)", function()
   if active_window_is_terminal() and not fcitx5_toggles_on_ctrl_space() then
