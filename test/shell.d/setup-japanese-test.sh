@@ -14,13 +14,15 @@ cat >"$stub_bin/omarchy-pkg-add" <<'STUB'
 #!/bin/bash
 printf 'pkg %s\n' "$*" >>"${CALL_LOG:?}"
 STUB
-# Note whether Mozc is in the profile when fcitx5 stops and starts, so the
-# test can tell the profile was written while fcitx5 was down.
+# Note whether Mozc is in the profile and Henkan is in the config when fcitx5
+# stops and starts, so the test can tell both were written while fcitx5 was
+# down. fcitx5 only reads them when it starts.
 cat >"$stub_bin/systemctl" <<'STUB'
 #!/bin/bash
-mozc=no
+mozc=no henkan=no
 grep -qx 'Name=mozc' "$HOME/.config/fcitx5/profile" 2>/dev/null && mozc=yes
-printf 'systemctl %s (mozc: %s)\n' "$*" "$mozc" >>"${CALL_LOG:?}"
+grep -qx '0=Henkan' "$HOME/.config/fcitx5/config" 2>/dev/null && henkan=yes
+printf 'systemctl %s (mozc: %s, henkan: %s)\n' "$*" "$mozc" "$henkan" >>"${CALL_LOG:?}"
 STUB
 cat >"$stub_bin/pkill" <<'STUB'
 #!/bin/bash
@@ -95,8 +97,8 @@ grep -Fx 'Name=keyboard-us' <<<"$(profile_of us)" >/dev/null &&
 pass "a US keyboard gets Mozc after keyboard-us"
 
 calls=$(<"$test_dir/us.calls")
-grep -Fx 'systemctl --user stop omarchy-fcitx5.service (mozc: no)' <<<"$calls" >/dev/null &&
-  grep -Fx 'systemctl --user start omarchy-fcitx5.service (mozc: yes)' <<<"$calls" >/dev/null ||
+grep -Fx 'systemctl --user stop omarchy-fcitx5.service (mozc: no, henkan: no)' <<<"$calls" >/dev/null &&
+  grep -Fx 'systemctl --user start omarchy-fcitx5.service (mozc: yes, henkan: no)' <<<"$calls" >/dev/null ||
   fail "fcitx5 is down while its profile is rewritten" "$calls"
 pass "fcitx5 is down while its profile is rewritten"
 
@@ -113,6 +115,10 @@ grep -A1 -Fx '[Hotkey/TriggerKeys]' <<<"$config" | grep -Fx '0=Zenkaku_Hankaku' 
   grep -A1 -Fx '[Hotkey/DeactivateKeys]' <<<"$config" | grep -Fx '0=Muhenkan' >/dev/null ||
   fail "a JIS keyboard switches input with Henkan and Muhenkan" "$config"
 pass "a JIS keyboard switches input with Henkan and Muhenkan"
+
+grep -Fx 'systemctl --user start omarchy-fcitx5.service (mozc: yes, henkan: yes)' "$test_dir/jis.calls" >/dev/null ||
+  fail "fcitx5 starts after the JIS hotkeys are written" "$(<"$test_dir/jis.calls")"
+pass "fcitx5 starts after the JIS hotkeys are written"
 
 if grep -F 'Hotkey/' <<<"$(config_of us)" >/dev/null; then
   fail "other keyboards keep the fcitx5 default hotkeys" "$(config_of us)"
