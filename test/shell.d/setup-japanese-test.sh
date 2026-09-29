@@ -201,6 +201,24 @@ TEST_LAYOUT=us run_setup append
   fail "adding Mozc to an existing profile is idempotent" "$(profile_of append)"
 pass "adding Mozc to an existing profile is idempotent"
 
+# fcitx5 saves its profile when setup stops it, so a user who never picked
+# input methods has fcitx5's own single keyboard-us group, even on JIS. That
+# one takes the layout from vconsole.conf, which Mozc reads its kana table from.
+home="$test_dir/stock/home"
+mkdir -p "$home/.config/fcitx5"
+printf '[Groups/0]\n# Group Name\nName=Default\n# Layout\nDefault Layout=us\n# Default Input Method\nDefaultIM=keyboard-us\n\n[Groups/0/Items/0]\n# Name\nName=keyboard-us\n# Layout\nLayout=\n\n[GroupOrder]\n0=Default\n' >"$home/.config/fcitx5/profile"
+TEST_LAYOUT=jp run_setup stock
+profile=$(profile_of stock)
+grep -Fx 'Default Layout=jp' <<<"$profile" >/dev/null &&
+  grep -Fx 'Name=keyboard-jp' <<<"$profile" >/dev/null &&
+  grep -Fx 'Name=mozc' <<<"$profile" >/dev/null &&
+  ! grep -Fx 'Name=keyboard-us' <<<"$profile" >/dev/null ||
+  fail "fcitx5's own keyboard-us profile follows a JIS layout" "$profile"
+if compgen -G "$home/.config/fcitx5/profile.bak.*" >/dev/null; then
+  fail "fcitx5's own profile is not backed up"
+fi
+pass "fcitx5's own keyboard-us profile follows a JIS layout"
+
 # A profile with no group to add to is replaced, and the user is told where the
 # old one went.
 home="$test_dir/backup/home"

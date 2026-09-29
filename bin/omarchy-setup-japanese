@@ -64,6 +64,17 @@ layout=$(vconsole_setting XKBLAYOUT)
 layout=${layout:-us}
 variant=$(vconsole_setting XKBVARIANT)
 
+# Whether an fcitx5 profile holds nothing but one keyboard layout.
+only_keyboard_layout() {
+  local names
+
+  names=$(awk '
+    /^\[/ { in_item = ($0 ~ /^\[Groups\/[0-9]+\/Items\/[0-9]+\]$/); next }
+    in_item && sub(/^Name=/, "") { print }
+  ' "$1")
+  [[ $names == keyboard-* && $names != *$'\n'* ]]
+}
+
 # fcitx5 forwards keys through its own keymap while an input method is on, so
 # the group has to use the same layout as the desktop.
 setup_input_method() {
@@ -79,20 +90,25 @@ setup_input_method() {
     return
   fi
 
-  # Keep the input methods the user already has and put Mozc at the end of
-  # their first group. fcitx5 reads a group's items by index, so Mozc takes the
-  # next one.
-  if [[ -f $profile ]] && grep -qx "\[Groups/0\]" "$profile"; then
-    local next
-    next=$(grep -c "^\[Groups/0/Items/[0-9]*\]$" "$profile" || true)
-    printf '\n[Groups/0/Items/%s]\n# Name\nName=mozc\n# Layout\nLayout=\n' "$next" >>"$profile"
-    echo "Added Mozc after your other input methods."
-    return
-  fi
+  # fcitx5 saves its profile when stop_fcitx5 stops it, so a user who never
+  # picked input methods has fcitx5's own: a single keyboard layout, which it
+  # guesses as us because it can't read Hyprland's. That one is written fresh
+  # below with the layout from vconsole.conf, since Mozc picks its kana table
+  # from the group layout.
+  if [[ -f $profile ]] && ! only_keyboard_layout "$profile"; then
+    # Keep the input methods the user already has and put Mozc at the end of
+    # their first group. fcitx5 reads a group's items by index, so Mozc takes
+    # the next one.
+    if grep -qx "\[Groups/0\]" "$profile"; then
+      local next
+      next=$(grep -c "^\[Groups/0/Items/[0-9]*\]$" "$profile" || true)
+      printf '\n[Groups/0/Items/%s]\n# Name\nName=mozc\n# Layout\nLayout=\n' "$next" >>"$profile"
+      echo "Added Mozc after your other input methods."
+      return
+    fi
 
-  # A profile without a group has nothing to add to, so it is replaced, with a
-  # copy kept.
-  if [[ -f $profile ]]; then
+    # A profile without a group has nothing to add to, so it is replaced, with
+    # a copy kept.
     local backup
     backup="$profile.bak.$(date +%s)"
     cp "$profile" "$backup"
